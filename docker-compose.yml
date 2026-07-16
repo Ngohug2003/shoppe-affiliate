@@ -1,0 +1,82 @@
+name: shopee-affiliate-bot
+
+x-app: &app
+  build:
+    context: .
+    target: development
+    args:
+      USER_ID: ${USER_ID:-1000}
+      GROUP_ID: ${GROUP_ID:-1000}
+  env_file: .env
+  volumes:
+    - .:/app
+  networks:
+    - backend
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  api:
+    <<: *app
+    command: ["api"]
+    ports:
+      - "8000:8000"
+      - "${DEBUGPY_PORT:-5678}:${DEBUGPY_PORT:-5678}"
+    healthcheck:
+      test: ["CMD", "python", "/app/docker/healthcheck.py"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  telegram_bot:
+    <<: *app
+    profiles: ["telegram"]
+    command: ["python", "-m", "app.scripts.telegram_polling"]
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16.9-bookworm
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres_test:
+    image: postgres:16.9-bookworm
+    profiles: ["test"]
+    environment:
+      POSTGRES_DB: shopee_bot_test
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    tmpfs:
+      - /var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
+    driver: bridge

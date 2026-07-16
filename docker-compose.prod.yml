@@ -1,0 +1,65 @@
+name: shopee-affiliate-bot-prod
+
+x-app: &app
+  build:
+    context: .
+    target: production
+    args:
+      USER_ID: ${USER_ID:-1000}
+      GROUP_ID: ${GROUP_ID:-1000}
+  env_file: .env
+  restart: unless-stopped
+  networks:
+    - backend
+  depends_on:
+    postgres:
+      condition: service_healthy
+  deploy:
+    resources:
+      limits:
+        cpus: "1.0"
+        memory: 512M
+      reservations:
+        memory: 128M
+
+services:
+  api:
+    <<: *app
+    command: ["api-prod"]
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "/app/docker/healthcheck.py"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  telegram_bot:
+    <<: *app
+    profiles: ["telegram"]
+    command: ["python", "-m", "app.scripts.telegram_polling"]
+    depends_on:
+      api:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16.9-bookworm
+    env_file: .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
+    driver: bridge
