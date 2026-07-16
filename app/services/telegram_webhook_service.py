@@ -10,7 +10,6 @@ from app.providers.affiliate import build_affiliate_provider
 from app.schemas.affiliate_catalog import AffiliateProductResponse
 from app.schemas.telegram import TelegramApiResponse, TelegramUpdate
 from app.services.affiliate_catalog_service import AffiliateCatalogService
-from app.services.product_metadata_service import ProductMetadataError
 from app.services.telegram_catalog_bot import (
     CatalogApiError,
     TelegramCatalogBot,
@@ -40,7 +39,7 @@ class DirectCatalogImporter:
                     url,
                     client=self.client,
                 )
-        except (ApplicationError, ProductMetadataError) as exc:
+        except ApplicationError as exc:
             raise CatalogApiError(str(exc)) from exc
         return AffiliateProductResponse(**product.__dict__)
 
