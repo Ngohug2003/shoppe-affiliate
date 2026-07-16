@@ -1,0 +1,27 @@
+from typing import Annotated
+
+from fastapi import APIRouter, BackgroundTasks, Header
+
+from app.controllers.telegram_webhook_controller import TelegramWebhookController
+from app.core.config import get_settings
+from app.schemas.telegram import TelegramUpdate, TelegramWebhookResponse
+from app.services.telegram_webhook_service import TelegramWebhookService
+
+router = APIRouter(tags=["telegram"])
+telegram_webhook_controller = TelegramWebhookController(
+    TelegramWebhookService(get_settings())
+)
+
+
+@router.post("/telegram/webhook", response_model=TelegramWebhookResponse)
+async def receive_telegram_webhook(
+    update: TelegramUpdate,
+    background_tasks: BackgroundTasks,
+    telegram_secret: Annotated[
+        str | None,
+        Header(alias="X-Telegram-Bot-Api-Secret-Token"),
+    ] = None,
+) -> TelegramWebhookResponse:
+    return telegram_webhook_controller.receive_update(
+        update, telegram_secret, background_tasks
+    )

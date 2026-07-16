@@ -4,9 +4,14 @@ import asyncio
 
 import httpx
 import structlog
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, ValidationError
 
 from app.schemas.affiliate_catalog import AffiliateProductResponse
+from app.schemas.telegram import (
+    TelegramApiResponse,
+    TelegramUpdate,
+    TelegramUpdatesResponse,
+)
 from app.utils.urls import extract_shopee_urls
 
 logger = structlog.get_logger(__name__)
@@ -22,29 +27,6 @@ class TelegramApiError(RuntimeError):
 
 class _TokenResponse(BaseModel):
     access_token: str
-
-
-class TelegramChat(BaseModel):
-    id: int
-
-
-class TelegramMessage(BaseModel):
-    chat: TelegramChat
-    text: str | None = None
-
-
-class TelegramUpdate(BaseModel):
-    update_id: int
-    message: TelegramMessage | None = None
-
-
-class _TelegramResponse(BaseModel):
-    ok: bool
-    description: str | None = None
-
-
-class _TelegramUpdatesResponse(_TelegramResponse):
-    result: list[TelegramUpdate] = Field(default_factory=list)
 
 
 class CatalogApiClient:
@@ -186,7 +168,7 @@ class TelegramCatalogBot:
             request_timeout=self.polling_timeout_seconds + 10,
         )
         try:
-            parsed = _TelegramUpdatesResponse.model_validate(response.json())
+            parsed = TelegramUpdatesResponse.model_validate(response.json())
         except (ValueError, ValidationError) as exc:
             raise TelegramApiError("Telegram getUpdates response is invalid") from exc
         if response.is_error or not parsed.ok:
@@ -218,7 +200,7 @@ class TelegramCatalogBot:
     @staticmethod
     def _validate_telegram_response(response: httpx.Response) -> None:
         try:
-            parsed = _TelegramResponse.model_validate(response.json())
+            parsed = TelegramApiResponse.model_validate(response.json())
         except (ValueError, ValidationError) as exc:
             raise TelegramApiError("Telegram response is invalid") from exc
         if response.is_error or not parsed.ok:

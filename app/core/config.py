@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     CATALOG_API_BASE_URL: AnyHttpUrl = AnyHttpUrl("http://api:8000")
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_POLLING_TIMEOUT_SECONDS: int = Field(default=30, ge=1, le=50)
+    TELEGRAM_WEBHOOK_ENABLED: bool = False
+    TELEGRAM_WEBHOOK_SECRET: str = Field(default="", max_length=256)
 
 
 @lru_cache

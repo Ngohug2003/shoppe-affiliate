@@ -28,6 +28,7 @@ def test_openapi_exposes_affiliate_catalog(client: TestClient) -> None:
     assert "/api/v1/affiliate-products" in paths
     assert "/api/v1/affiliate-shops" in paths
     assert "/api/v1/affiliate-shops/{shop_id}/products" in paths
+    assert "/api/v1/telegram/webhook" in paths
 
 
 def test_ready_when_dependencies_are_available(

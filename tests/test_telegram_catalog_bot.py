@@ -4,12 +4,10 @@ from unittest.mock import AsyncMock
 import httpx
 
 from app.schemas.affiliate_catalog import AffiliateProductResponse
+from app.schemas.telegram import TelegramChat, TelegramMessage, TelegramUpdate
 from app.services.telegram_catalog_bot import (
     CatalogApiClient,
     TelegramCatalogBot,
-    TelegramChat,
-    TelegramMessage,
-    TelegramUpdate,
 )
 
 

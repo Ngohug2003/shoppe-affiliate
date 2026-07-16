@@ -4,6 +4,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
+import httpx
 import structlog
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +15,10 @@ from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.db.session import close_database
+from app.services.telegram_webhook_service import (
+    TelegramWebhookConfigurationError,
+    TelegramWebhookService,
+)
 
 settings = get_settings()
 configure_logging(settings.LOG_LEVEL)
@@ -23,13 +28,21 @@ logger = structlog.get_logger(__name__)
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     logger.info("application_started", environment=settings.APP_ENV)
+    webhook_service = TelegramWebhookService(settings)
+    try:
+        await webhook_service.register()
+    except (httpx.HTTPError, TelegramWebhookConfigurationError) as exc:
+        logger.error(
+            "telegram_webhook_registration_failed",
+            error_type=type(exc).__name__,
+        )
     yield
     await close_database()
     logger.info("application_stopped")
 
 
 def create_app() -> FastAPI:
-    application = FastAPI(title=settings.APP_NAME, version="0.5.0", lifespan=lifespan)
+    application = FastAPI(title=settings.APP_NAME, version="0.6.0", lifespan=lifespan)
     application.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.TRUSTED_HOSTS)
     application.add_middleware(
         CORSMiddleware,
