@@ -4,14 +4,45 @@ import httpx
 import structlog
 
 from app.core.config import Settings
+from app.core.exceptions import ApplicationError
+from app.db.session import async_session_factory
+from app.providers.affiliate import build_affiliate_provider
+from app.schemas.affiliate_catalog import AffiliateProductResponse
 from app.schemas.telegram import TelegramApiResponse, TelegramUpdate
-from app.services.telegram_catalog_bot import CatalogApiClient, TelegramCatalogBot
+from app.services.affiliate_catalog_service import AffiliateCatalogService
+from app.services.product_metadata_service import ProductMetadataError
+from app.services.telegram_catalog_bot import (
+    CatalogApiError,
+    TelegramCatalogBot,
+)
 
 logger = structlog.get_logger(__name__)
 
 
 class TelegramWebhookConfigurationError(RuntimeError):
     pass
+
+
+class DirectCatalogImporter:
+    def __init__(
+        self,
+        service: AffiliateCatalogService,
+        client: httpx.AsyncClient,
+    ) -> None:
+        self.service = service
+        self.client = client
+
+    async def import_product(self, url: str) -> AffiliateProductResponse:
+        try:
+            async with async_session_factory() as session:
+                product = await self.service.import_product(
+                    session,
+                    url,
+                    client=self.client,
+                )
+        except (ApplicationError, ProductMetadataError) as exc:
+            raise CatalogApiError(str(exc)) from exc
+        return AffiliateProductResponse(**product.__dict__)
 
 
 class TelegramWebhookService:
@@ -22,10 +53,10 @@ class TelegramWebhookService:
         self.webhook_url = (
             f"{str(settings.APP_BASE_URL).rstrip('/')}/api/v1/telegram/webhook"
         )
-        self.catalog_base_url = str(settings.CATALOG_API_BASE_URL)
-        self.admin_email = settings.ADMIN_EMAIL
-        self.admin_password = settings.ADMIN_PASSWORD
         self.polling_timeout_seconds = settings.TELEGRAM_POLLING_TIMEOUT_SECONDS
+        self.catalog_service = AffiliateCatalogService(
+            build_affiliate_provider(settings)
+        )
 
     @property
     def is_configured(self) -> bool:
@@ -67,14 +98,12 @@ class TelegramWebhookService:
             logger.warning("telegram_webhook_update_skipped_not_configured")
             return
         async with (
-            httpx.AsyncClient(timeout=90) as catalog_http_client,
+            httpx.AsyncClient(timeout=90) as product_http_client,
             httpx.AsyncClient(timeout=30) as telegram_http_client,
         ):
-            catalog_client = CatalogApiClient(
-                base_url=self.catalog_base_url,
-                admin_email=self.admin_email,
-                admin_password=self.admin_password,
-                client=catalog_http_client,
+            catalog_client = DirectCatalogImporter(
+                self.catalog_service,
+                product_http_client,
             )
             bot = TelegramCatalogBot(
                 token=self.token,

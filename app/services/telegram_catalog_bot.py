@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Protocol
 
 import httpx
 import structlog
@@ -23,6 +24,10 @@ class CatalogApiError(RuntimeError):
 
 class TelegramApiError(RuntimeError):
     pass
+
+
+class CatalogProductImporter(Protocol):
+    async def import_product(self, url: str) -> AffiliateProductResponse: ...
 
 
 class _TokenResponse(BaseModel):
@@ -106,7 +111,7 @@ class TelegramCatalogBot:
         token: str,
         polling_timeout_seconds: int,
         telegram_client: httpx.AsyncClient,
-        catalog_client: CatalogApiClient,
+        catalog_client: CatalogProductImporter,
     ) -> None:
         self.telegram_base_url = f"https://api.telegram.org/bot{token}"
         self.polling_timeout_seconds = polling_timeout_seconds
