@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     TELEGRAM_POLLING_TIMEOUT_SECONDS: int = Field(default=30, ge=1, le=50)
     TELEGRAM_WEBHOOK_ENABLED: bool = False
     TELEGRAM_WEBHOOK_SECRET: str = Field(default="", max_length=256)
+    TELEGRAM_EXCEL_IMPORT_DELAY_SECONDS: float = Field(default=3.0, ge=0, le=60)
+    TELEGRAM_EXCEL_MAX_FILE_BYTES: int = Field(
+        default=5 * 1024 * 1024, ge=1024, le=20 * 1024 * 1024
+    )
+    TELEGRAM_EXCEL_MAX_LINKS: int = Field(default=200, ge=1, le=1000)
+    TELEGRAM_EXCEL_MAX_CELLS: int = Field(default=100_000, ge=100, le=1_000_000)
 
 
 @lru_cache

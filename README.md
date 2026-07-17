@@ -128,6 +128,10 @@ từng xuất hiện trong log hoặc hội thoại.
 CATALOG_API_BASE_URL=http://api:8000
 TELEGRAM_BOT_TOKEN=TOKEN_MOI_TU_BOTFATHER
 TELEGRAM_POLLING_TIMEOUT_SECONDS=30
+TELEGRAM_EXCEL_IMPORT_DELAY_SECONDS=3
+TELEGRAM_EXCEL_MAX_FILE_BYTES=5242880
+TELEGRAM_EXCEL_MAX_LINKS=200
+TELEGRAM_EXCEL_MAX_CELLS=100000
 ```
 
 Khởi động bot:
@@ -142,6 +146,12 @@ nội bộ, gọi `POST /api/v1/affiliate-products` và trả tên, Shop ID, Pro
 affiliate link. Nếu dùng trong group, cần cấu hình Privacy Mode phù hợp trong
 BotFather để bot nhìn thấy tin nhắn thông thường.
 
+Bot cũng nhận file `.xlsx`. Có thể đặt link Shopee ở bất kỳ sheet hoặc ô nào;
+bot sẽ quét toàn bộ file, loại link trùng và thêm từng sản phẩm theo đúng thứ tự.
+Sau mỗi link bot nghỉ theo `TELEGRAM_EXCEL_IMPORT_DELAY_SECONDS` (mặc định 3 giây)
+rồi mới xử lý link tiếp theo. File tối đa mặc định 5 MB, 200 link và 100.000 ô.
+Kết thúc bot gửi tổng số link thành công và thất bại.
+
 ### Telegram webhook trên Render
 
 Production không cần container polling. Cấu hình các biến sau trên Render:
@@ -152,6 +162,7 @@ CATALOG_API_BASE_URL=https://TEN_SERVICE.onrender.com
 TELEGRAM_BOT_TOKEN=TOKEN_MOI_TU_BOTFATHER
 TELEGRAM_WEBHOOK_ENABLED=true
 TELEGRAM_WEBHOOK_SECRET=CHUOI_HEX_NGAU_NHIEN
+TELEGRAM_EXCEL_IMPORT_DELAY_SECONDS=3
 ```
 
 Tạo secret bằng `openssl rand -hex 32`. Khi FastAPI khởi động, ứng dụng tự đăng

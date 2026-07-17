@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import PurePosixPath
 from typing import Protocol
+from urllib.parse import quote
 
 import httpx
 import structlog
@@ -11,9 +13,12 @@ from app.schemas.base import ApiResponse
 from app.schemas.responses.affiliate_catalog import AffiliateProductResponse
 from app.schemas.telegram import (
     TelegramApiResponse,
+    TelegramDocument,
+    TelegramFileResponse,
     TelegramUpdate,
     TelegramUpdatesResponse,
 )
+from app.services.excel_import_service import ExcelImportError, ExcelShopeeUrlExtractor
 from app.utils.urls import extract_shopee_urls
 
 logger = structlog.get_logger(__name__)
@@ -127,11 +132,22 @@ class TelegramCatalogBot:
         polling_timeout_seconds: int,
         telegram_client: httpx.AsyncClient,
         catalog_client: CatalogProductImporter,
+        excel_import_delay_seconds: float = 3.0,
+        excel_max_file_bytes: int = 5 * 1024 * 1024,
+        excel_max_links: int = 200,
+        excel_max_cells: int = 100_000,
     ) -> None:
+        self.token = token
         self.telegram_base_url = f"https://api.telegram.org/bot{token}"
         self.polling_timeout_seconds = polling_timeout_seconds
         self.telegram_client = telegram_client
         self.catalog_client = catalog_client
+        self.excel_import_delay_seconds = excel_import_delay_seconds
+        self.excel_max_file_bytes = excel_max_file_bytes
+        self.excel_extractor = ExcelShopeeUrlExtractor(
+            max_links=excel_max_links,
+            max_cells=excel_max_cells,
+        )
         self.offset: int | None = None
 
     async def run(self) -> None:
@@ -153,9 +169,14 @@ class TelegramCatalogBot:
                 await asyncio.sleep(3)
 
     async def handle_update(self, update: TelegramUpdate) -> None:
-        if update.message is None or update.message.text is None:
+        if update.message is None:
             return
         chat_id = update.message.chat.id
+        if update.message.document is not None:
+            await self._handle_excel_document(chat_id, update.message.document)
+            return
+        if update.message.text is None:
+            return
         urls = extract_shopee_urls(update.message.text)
         if not urls:
             await self._send_message(chat_id, "Hãy gửi một link sản phẩm Shopee hợp lệ.")
@@ -168,6 +189,110 @@ class TelegramCatalogBot:
                 await self._send_message(chat_id, f"❌ Không thể thêm sản phẩm: {exc}")
                 continue
             await self._send_message(chat_id, self._success_message(product))
+
+    async def _handle_excel_document(
+        self, chat_id: int, document: TelegramDocument
+    ) -> None:
+        file_name = document.file_name or ""
+        if not file_name.lower().endswith(".xlsx"):
+            await self._send_message(
+                chat_id,
+                "❌ Chỉ hỗ trợ file Excel định dạng .xlsx.",
+            )
+            return
+        if (
+            document.file_size is not None
+            and document.file_size > self.excel_max_file_bytes
+        ):
+            await self._send_message(
+                chat_id,
+                f"❌ File vượt quá giới hạn {self.excel_max_file_bytes // (1024 * 1024)} MB.",
+            )
+            return
+
+        await self._send_message(chat_id, "📥 Đã nhận file Excel, đang kiểm tra link Shopee...")
+        try:
+            content = await self._download_telegram_file(document.file_id)
+            extraction = await asyncio.to_thread(self.excel_extractor.extract, content)
+        except (ExcelImportError, TelegramApiError) as exc:
+            await self._send_message(chat_id, f"❌ Không thể đọc file Excel: {exc}")
+            return
+
+        if not extraction.urls:
+            await self._send_message(
+                chat_id,
+                "❌ Không tìm thấy link Shopee nào trong file Excel.",
+            )
+            return
+
+        notices: list[str] = []
+        if extraction.link_limit_reached:
+            notices.append("đã đạt giới hạn số link")
+        if extraction.scan_limit_reached:
+            notices.append("đã đạt giới hạn số ô quét")
+        suffix = f" ({', '.join(notices)})" if notices else ""
+        await self._send_message(
+            chat_id,
+            f"🔎 Tìm thấy {len(extraction.urls)} link. Bắt đầu thêm tuần tự{suffix}.",
+        )
+
+        succeeded = 0
+        failed = 0
+        total = len(extraction.urls)
+        for index, url in enumerate(extraction.urls, start=1):
+            try:
+                product = await self.catalog_client.import_product(url)
+            except CatalogApiError as exc:
+                failed += 1
+                await self._send_message(
+                    chat_id,
+                    f"❌ [{index}/{total}] {url}\nLỗi: {exc}",
+                )
+            else:
+                succeeded += 1
+                await self._send_message(
+                    chat_id,
+                    self._batch_success_message(product, index=index, total=total),
+                )
+            if index < total and self.excel_import_delay_seconds > 0:
+                await asyncio.sleep(self.excel_import_delay_seconds)
+
+        await self._send_message(
+            chat_id,
+            "🏁 Hoàn tất file Excel\n"
+            f"✅ Thành công: {succeeded}\n"
+            f"❌ Thất bại: {failed}\n"
+            f"📦 Tổng cộng: {total}",
+        )
+
+    async def _download_telegram_file(self, file_id: str) -> bytes:
+        response = await self._post_telegram("getFile", {"file_id": file_id})
+        try:
+            payload = TelegramFileResponse.model_validate(response.json())
+        except (ValueError, ValidationError) as exc:
+            raise TelegramApiError("Telegram getFile trả về dữ liệu không hợp lệ") from exc
+        if response.is_error or not payload.ok or payload.result is None:
+            raise TelegramApiError(payload.description or "Telegram không trả về file_path")
+
+        file_path = payload.result.file_path.lstrip("/")
+        if ".." in PurePosixPath(file_path).parts:
+            raise TelegramApiError("Telegram trả về file_path không hợp lệ")
+        download_url = (
+            f"https://api.telegram.org/file/bot{self.token}/{quote(file_path, safe='/')}"
+        )
+        content = bytearray()
+        try:
+            async with self.telegram_client.stream(
+                "GET", download_url, timeout=60
+            ) as download_response:
+                download_response.raise_for_status()
+                async for chunk in download_response.aiter_bytes():
+                    content.extend(chunk)
+                    if len(content) > self.excel_max_file_bytes:
+                        raise ExcelImportError("File Excel vượt quá giới hạn dung lượng")
+        except httpx.HTTPError as exc:
+            raise TelegramApiError("Không thể tải file Excel từ Telegram") from exc
+        return bytes(content)
 
     async def _delete_webhook(self) -> None:
         response = await self._post_telegram(
@@ -233,5 +358,15 @@ class TelegramCatalogBot:
             f"Tên: {product.title}\n"
             f"Shop ID: {product.shop_id}\n"
             f"Product ID: {product.item_id}\n"
+            f"Link affiliate: {product.affiliate_url}"
+        )
+
+    @staticmethod
+    def _batch_success_message(
+        product: AffiliateProductResponse, *, index: int, total: int
+    ) -> str:
+        return (
+            f"✅ [{index}/{total}] Đã thêm sản phẩm\n"
+            f"Tên: {product.title}\n"
             f"Link affiliate: {product.affiliate_url}"
         )

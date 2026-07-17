@@ -59,6 +59,12 @@ class TelegramWebhookService:
             f"{str(settings.APP_BASE_URL).rstrip('/')}/api/v1/telegram/webhook"
         )
         self.polling_timeout_seconds = settings.TELEGRAM_POLLING_TIMEOUT_SECONDS
+        self.excel_import_delay_seconds = (
+            settings.TELEGRAM_EXCEL_IMPORT_DELAY_SECONDS
+        )
+        self.excel_max_file_bytes = settings.TELEGRAM_EXCEL_MAX_FILE_BYTES
+        self.excel_max_links = settings.TELEGRAM_EXCEL_MAX_LINKS
+        self.excel_max_cells = settings.TELEGRAM_EXCEL_MAX_CELLS
         self.catalog_service = AffiliateCatalogService(
             build_affiliate_provider(settings)
         )
@@ -123,5 +129,9 @@ class TelegramWebhookService:
                 polling_timeout_seconds=self.polling_timeout_seconds,
                 telegram_client=telegram_http_client,
                 catalog_client=catalog_client,
+                excel_import_delay_seconds=self.excel_import_delay_seconds,
+                excel_max_file_bytes=self.excel_max_file_bytes,
+                excel_max_links=self.excel_max_links,
+                excel_max_cells=self.excel_max_cells,
             )
             await bot.handle_update(update)
