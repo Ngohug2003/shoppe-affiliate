@@ -17,19 +17,28 @@ async def test_catalog_client_authenticates_and_imports_product() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         requested_paths.append(request.url.path)
         if request.url.path == "/api/v1/auth/token":
-            return httpx.Response(200, json={"access_token": "token"})
+            return httpx.Response(
+                200,
+                json={
+                    "status": {"code": 200, "message": ""},
+                    "data": {"access_token": "token", "token_type": "bearer"},
+                },
+            )
         assert request.headers["Authorization"] == "Bearer token"
         assert json.loads(request.content) == {"url": "https://vn.shp.ee/test"}
         return httpx.Response(
             201,
             json={
-                "shop_id": "123",
-                "item_id": "456",
-                "title": "Sản phẩm",
-                "image_url": "https://down-vn.img.susercontent.com/file/image",
-                "product_url": "https://shopee.vn/product/123/456",
-                "affiliate_url": "https://s.shopee.vn/an_redir?affiliate_id=1",
-                "metadata_source": "shopee_open_graph",
+                "status": {"code": 201, "message": ""},
+                "data": {
+                    "shop_id": "123",
+                    "item_id": "456",
+                    "title": "Sản phẩm",
+                    "image_url": "https://down-vn.img.susercontent.com/file/image",
+                    "product_url": "https://shopee.vn/product/123/456",
+                    "affiliate_url": "https://s.shopee.vn/an_redir?affiliate_id=1",
+                    "metadata_source": "shopee_open_graph",
+                },
             },
         )
 

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from secrets import compare_digest
-
-from fastapi import BackgroundTasks, HTTPException, status
+from fastapi import BackgroundTasks
 
 from app.schemas.telegram import TelegramUpdate, TelegramWebhookResponse
 from app.services.telegram_webhook_service import TelegramWebhookService
@@ -18,17 +16,6 @@ class PublicTelegramWebhookController:
         supplied_secret: str | None,
         background_tasks: BackgroundTasks,
     ) -> TelegramWebhookResponse:
-        if not self.service.is_configured:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Telegram webhook is not configured",
-            )
-        if supplied_secret is None or not compare_digest(
-            supplied_secret, self.service.secret
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Invalid Telegram webhook secret",
-            )
+        self.service.validate_webhook_secret(supplied_secret)
         background_tasks.add_task(self.service.process_update, update)
         return TelegramWebhookResponse()

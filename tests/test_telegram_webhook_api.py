@@ -33,6 +33,10 @@ def test_webhook_returns_503_when_not_configured(
     )
 
     assert response.status_code == 503
+    assert response.json() == {
+        "status": {"code": 503, "message": "Telegram webhook chưa được cấu hình"},
+        "data": None,
+    }
 
 
 def test_webhook_rejects_invalid_secret(
@@ -47,6 +51,13 @@ def test_webhook_rejects_invalid_secret(
     )
 
     assert response.status_code == 403
+    assert response.json() == {
+        "status": {
+            "code": 403,
+            "message": "Telegram webhook secret không hợp lệ",
+        },
+        "data": None,
+    }
 
 
 def test_webhook_accepts_update_and_processes_it(
@@ -71,5 +82,8 @@ def test_webhook_accepts_update_and_processes_it(
     )
 
     assert response.status_code == 200
-    assert response.json() == {"ok": True}
+    assert response.json() == {
+        "status": {"code": 200, "message": ""},
+        "data": {"ok": True},
+    }
     process_update.assert_awaited_once()

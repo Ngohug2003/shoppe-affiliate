@@ -13,6 +13,7 @@ from structlog.contextvars import bind_contextvars, clear_contextvars
 
 from app.constants.tags import OPENAPI_TAGS
 from app.core.config import get_settings
+from app.core.exception_handlers import register_exception_handlers
 from app.core.logging import configure_logging
 from app.db.session import close_database
 from app.routes import api_router
@@ -57,6 +58,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    register_exception_handlers(application)
 
     @application.middleware("http")
     async def correlation_id_middleware(

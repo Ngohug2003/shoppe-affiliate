@@ -19,7 +19,10 @@ def client() -> Iterator[TestClient]:
 def test_live_returns_ok(client: TestClient) -> None:
     response = client.get("/api/v1/health/live")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {
+        "status": {"code": 200, "message": ""},
+        "data": {"status": "ok"},
+    }
     assert response.headers["X-Correlation-ID"]
 
 
@@ -32,6 +35,9 @@ def test_openapi_exposes_affiliate_catalog(client: TestClient) -> None:
     assert "/api/v1/telegram/webhook" in paths
     assert paths["/api/v1/affiliate-products"]["post"]["tags"] == [
         ADMIN_AFFILIATE_TAG
+    ]
+    assert paths["/api/v1/affiliate-products"]["get"]["tags"] == [
+        PUBLIC_AFFILIATE_TAG
     ]
     assert paths["/api/v1/affiliate-shops"]["get"]["tags"] == [
         PUBLIC_AFFILIATE_TAG
@@ -51,8 +57,11 @@ def test_ready_when_dependencies_are_available(
     response = client.get("/api/v1/health/ready")
     assert response.status_code == 200
     assert response.json() == {
-        "status": "ready",
-        "dependencies": {"postgres": "ok"},
+        "status": {"code": 200, "message": ""},
+        "data": {
+            "status": "ready",
+            "dependencies": {"postgres": "ok"},
+        },
     }
 
 
@@ -68,5 +77,9 @@ def test_ready_returns_503_when_postgres_is_unavailable(
 
     response = client.get("/api/v1/health/ready")
     assert response.status_code == 503
-    assert response.json()["status"] == "not_ready"
-    assert response.json()["dependencies"]["postgres"] == "unavailable"
+    assert response.json()["status"] == {
+        "code": 503,
+        "message": "PostgreSQL chưa sẵn sàng",
+    }
+    assert response.json()["data"]["status"] == "not_ready"
+    assert response.json()["data"]["dependencies"]["postgres"] == "unavailable"

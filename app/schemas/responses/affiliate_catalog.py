@@ -1,7 +1,10 @@
-from pydantic import BaseModel
+from pydantic import Field
+
+from app.schemas.base import ApiResponseSchema
+from app.schemas.responses.pagination import PaginatedResponse
 
 
-class AffiliateProductResponse(BaseModel):
+class AffiliateProductResponse(ApiResponseSchema):
     shop_id: str
     item_id: str
     title: str
@@ -11,6 +14,20 @@ class AffiliateProductResponse(BaseModel):
     metadata_source: str
 
 
-class AffiliateShopResponse(BaseModel):
+class AffiliateShopResponse(ApiResponseSchema):
     shop_id: str
     product_count: int
+
+
+class PublicAffiliateProductResponse(ApiResponseSchema):
+    id: int
+    title: str
+    url: str = Field(validation_alias="product_url")
+    image_url: str
+    affiliate_url: str
+
+
+class PublicAffiliateProductListResponse(
+    PaginatedResponse[PublicAffiliateProductResponse]
+):
+    pass

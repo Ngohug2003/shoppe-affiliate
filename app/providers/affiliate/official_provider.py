@@ -3,11 +3,11 @@ from __future__ import annotations
 import httpx
 
 from app.core.config import Settings
-from app.core.exceptions import ApplicationError
+from app.core.exceptions import UpstreamServiceError
 from app.providers.affiliate.base import AffiliateProvider, AffiliateResult
 
 
-class AffiliateProviderError(ApplicationError):
+class AffiliateProviderError(UpstreamServiceError):
     pass
 
 

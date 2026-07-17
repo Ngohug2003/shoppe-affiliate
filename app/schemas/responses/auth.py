@@ -1,14 +1,12 @@
-from pydantic import BaseModel, ConfigDict
+from app.schemas.base import ApiResponseSchema
 
 
-class TokenResponse(BaseModel):
+class TokenResponse(ApiResponseSchema):
     access_token: str
     token_type: str = "bearer"
 
 
-class UserResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class UserResponse(ApiResponseSchema):
     id: int
     email: str
     is_active: bool

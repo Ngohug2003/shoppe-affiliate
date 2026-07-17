@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 
 import httpx
 
-from app.core.exceptions import ApplicationError
+from app.core.exceptions import UpstreamServiceError
 from app.utils.urls import ensure_public_host, validate_shopee_url
 
 _ALLOWED_IMAGE_SUFFIXES = (".susercontent.com", ".shopeeusercontent.com")
@@ -16,7 +16,7 @@ _CRAWLER_USER_AGENT = (
 )
 
 
-class ProductMetadataError(ApplicationError):
+class ProductMetadataError(UpstreamServiceError):
     pass
 
 

@@ -1,6 +1,3 @@
-from fastapi import status
-from fastapi.responses import JSONResponse
-
 from app.schemas.responses.health import DependencyStatus, LiveResponse, ReadyResponse
 from app.services.health_service import HealthService
 
@@ -13,7 +10,7 @@ class PublicHealthController:
     def live() -> LiveResponse:
         return LiveResponse(status="ok")
 
-    async def ready(self) -> ReadyResponse | JSONResponse:
+    async def ready(self) -> ReadyResponse:
         postgres_ready = await self.service.is_postgres_ready()
         response = ReadyResponse(
             status="ready" if postgres_ready else "not_ready",
@@ -21,9 +18,4 @@ class PublicHealthController:
                 postgres="ok" if postgres_ready else "unavailable"
             ),
         )
-        if postgres_ready:
-            return response
-        return JSONResponse(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content=response.model_dump(),
-        )
+        return response

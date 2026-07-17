@@ -1,16 +1,16 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from app.schemas.base import ApiResponseSchema
 
 
-class LiveResponse(BaseModel):
+class LiveResponse(ApiResponseSchema):
     status: Literal["ok"]
 
 
-class DependencyStatus(BaseModel):
+class DependencyStatus(ApiResponseSchema):
     postgres: Literal["ok", "unavailable"]
 
 
-class ReadyResponse(BaseModel):
+class ReadyResponse(ApiResponseSchema):
     status: Literal["ready", "not_ready"]
     dependencies: DependencyStatus

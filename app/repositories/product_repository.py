@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
-from sqlalchemy import func, select
+from sqlalchemy import exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 
+from app.core.pagination import Page
 from app.models import AffiliateLink, Product
 
 
@@ -49,6 +52,56 @@ class ProductRepository:
     async def list_affiliate_products_by_shop_id(
         self, session: AsyncSession, shop_id: str
     ) -> list[ProductWithAffiliateUrl]:
+        return await self._list_affiliate_products(session, shop_id=shop_id)
+
+    async def list_all_affiliate_products(
+        self,
+        session: AsyncSession,
+        *,
+        page: int,
+        per_page: int,
+        title: str | None,
+    ) -> Page[ProductWithAffiliateUrl]:
+        filters = self._affiliate_product_filters(title=title)
+        total = int(
+            (
+                await session.execute(
+                    select(func.count(Product.id)).where(*filters)
+                )
+            ).scalar_one()
+        )
+        items = await self._list_affiliate_products(
+            session,
+            filters=filters,
+            offset=(page - 1) * per_page,
+            limit=per_page,
+        )
+        return Page(items=items, page=page, per_page=per_page, total=total)
+
+    @staticmethod
+    def _affiliate_product_filters(
+        *, title: str | None = None
+    ) -> list[ColumnElement[bool]]:
+        filters = [
+            Product.is_affiliate.is_(True),
+            Product.name.is_not(None),
+            Product.image_url.is_not(None),
+            exists(select(AffiliateLink.id).where(AffiliateLink.product_id == Product.id)),
+        ]
+        normalized_title = title.strip() if title else None
+        if normalized_title:
+            filters.append(Product.name.ilike(f"%{normalized_title}%"))
+        return filters
+
+    async def _list_affiliate_products(
+        self,
+        session: AsyncSession,
+        *,
+        shop_id: str | None = None,
+        filters: Sequence[ColumnElement[bool]] | None = None,
+        offset: int | None = None,
+        limit: int | None = None,
+    ) -> list[ProductWithAffiliateUrl]:
         latest_affiliate_url = (
             select(AffiliateLink.affiliate_url)
             .where(AffiliateLink.product_id == Product.id)
@@ -56,13 +109,21 @@ class ProductRepository:
             .limit(1)
             .scalar_subquery()
         )
-        rows = (
-            await session.execute(
-                select(Product, latest_affiliate_url.label("affiliate_url"))
-                .where(Product.shop_id == shop_id, Product.is_affiliate.is_(True))
-                .order_by(Product.created_at.desc())
+        query = select(Product, latest_affiliate_url.label("affiliate_url")).where(
+            *(
+                filters
+                if filters is not None
+                else self._affiliate_product_filters()
             )
-        ).all()
+        )
+        if shop_id is not None:
+            query = query.where(Product.shop_id == shop_id)
+        query = query.order_by(Product.created_at.desc())
+        if offset is not None:
+            query = query.offset(offset)
+        if limit is not None:
+            query = query.limit(limit)
+        rows = (await session.execute(query)).all()
         return [
             ProductWithAffiliateUrl(product=product, affiliate_url=str(affiliate_url))
             for product, affiliate_url in rows

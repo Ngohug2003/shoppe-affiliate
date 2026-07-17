@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+from secrets import compare_digest
+
 import httpx
 import structlog
 
 from app.core.config import Settings
-from app.core.exceptions import ApplicationError
+from app.core.exceptions import (
+    ApplicationError,
+    InvalidTelegramWebhookSecretError,
+    TelegramWebhookNotConfiguredError,
+)
 from app.db.session import async_session_factory
 from app.providers.affiliate import build_affiliate_provider
 from app.schemas.responses.affiliate_catalog import AffiliateProductResponse
@@ -41,7 +47,7 @@ class DirectCatalogImporter:
                 )
         except ApplicationError as exc:
             raise CatalogApiError(str(exc)) from exc
-        return AffiliateProductResponse(**product.__dict__)
+        return AffiliateProductResponse.model_validate(product)
 
 
 class TelegramWebhookService:
@@ -60,6 +66,14 @@ class TelegramWebhookService:
     @property
     def is_configured(self) -> bool:
         return self.enabled and bool(self.token) and bool(self.secret)
+
+    def validate_webhook_secret(self, supplied_secret: str | None) -> None:
+        if not self.is_configured:
+            raise TelegramWebhookNotConfiguredError
+        if supplied_secret is None or not compare_digest(
+            supplied_secret, self.secret
+        ):
+            raise InvalidTelegramWebhookSecretError
 
     async def register(self) -> bool:
         if not self.enabled:

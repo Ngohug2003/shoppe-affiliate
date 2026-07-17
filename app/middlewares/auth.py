@@ -8,7 +8,7 @@ from app.controllers.auth_controller import AuthController
 from app.db.session import get_db_session
 from app.models.user import User
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/oauth2-token")
 auth_controller = AuthController()
 
 
@@ -22,4 +22,4 @@ async def get_current_user(
 async def require_admin(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
-    return AuthController.require_admin(current_user)
+    return auth_controller.require_admin(current_user)

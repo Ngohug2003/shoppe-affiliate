@@ -7,6 +7,7 @@ from app.controllers.public.telegram_webhook_controller import (
     PublicTelegramWebhookController,
 )
 from app.core.config import get_settings
+from app.schemas.base import ApiResponse, success_response
 from app.schemas.telegram import TelegramUpdate, TelegramWebhookResponse
 from app.services.telegram_webhook_service import TelegramWebhookService
 
@@ -16,7 +17,10 @@ telegram_webhook_controller = PublicTelegramWebhookController(
 )
 
 
-@router.post("/telegram/webhook", response_model=TelegramWebhookResponse)
+@router.post(
+    "/telegram/webhook",
+    response_model=ApiResponse[TelegramWebhookResponse],
+)
 async def receive_telegram_webhook(
     update: TelegramUpdate,
     background_tasks: BackgroundTasks,
@@ -24,7 +28,8 @@ async def receive_telegram_webhook(
         str | None,
         Header(alias="X-Telegram-Bot-Api-Secret-Token"),
     ] = None,
-) -> TelegramWebhookResponse:
-    return telegram_webhook_controller.receive_update(
+) -> ApiResponse[TelegramWebhookResponse]:
+    response = telegram_webhook_controller.receive_update(
         update, telegram_secret, background_tasks
     )
+    return success_response(response)

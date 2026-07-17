@@ -7,6 +7,7 @@ import httpx
 import structlog
 from pydantic import BaseModel, ValidationError
 
+from app.schemas.base import ApiResponse
 from app.schemas.responses.affiliate_catalog import AffiliateProductResponse
 from app.schemas.telegram import (
     TelegramApiResponse,
@@ -61,9 +62,14 @@ class CatalogApiClient:
                 f"Catalog API returned HTTP {response.status_code}: {self._error_detail(response)}"
             )
         try:
-            return AffiliateProductResponse.model_validate(response.json())
+            payload = ApiResponse[AffiliateProductResponse].model_validate(
+                response.json()
+            )
         except (ValueError, ValidationError) as exc:
             raise CatalogApiError("Catalog API returned an invalid response") from exc
+        if payload.data is None:
+            raise CatalogApiError("Catalog API returned an empty product response")
+        return payload.data
 
     async def _authenticate(self) -> None:
         try:
@@ -81,9 +87,12 @@ class CatalogApiClient:
                 f"Catalog API authentication failed with HTTP {response.status_code}"
             )
         try:
-            self.access_token = _TokenResponse.model_validate(response.json()).access_token
+            payload = ApiResponse[_TokenResponse].model_validate(response.json())
         except (ValueError, ValidationError) as exc:
             raise CatalogApiError("Catalog API authentication response is invalid") from exc
+        if payload.data is None:
+            raise CatalogApiError("Catalog API authentication response has no token")
+        self.access_token = payload.data.access_token
 
     async def _post_product(self, url: str) -> httpx.Response:
         try:
@@ -98,9 +107,15 @@ class CatalogApiClient:
     @staticmethod
     def _error_detail(response: httpx.Response) -> str:
         try:
-            detail = response.json().get("detail")
+            payload = response.json()
         except (ValueError, AttributeError):
             return "unknown error"
+        status_payload = payload.get("status")
+        if isinstance(status_payload, dict):
+            message = status_payload.get("message")
+            if message:
+                return str(message)
+        detail = payload.get("detail")
         return str(detail) if detail else "unknown error"
 
 
