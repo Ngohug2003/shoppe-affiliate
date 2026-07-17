@@ -15,14 +15,17 @@ health_controller = PublicHealthController(HealthService(HealthRepository(engine
 
 @router.get("/live", response_model=ApiResponse[LiveResponse])
 async def live() -> ApiResponse[LiveResponse]:
-    return success_response(health_controller.live())
+    return success_response(
+        health_controller.live(),
+        message="Dịch vụ đang hoạt động",
+    )
 
 
 @router.get("/ready", response_model=ApiResponse[ReadyResponse])
 async def ready() -> ApiResponse[ReadyResponse] | JSONResponse:
     readiness = await health_controller.ready()
     if readiness.status == "ready":
-        return success_response(readiness)
+        return success_response(readiness, message="Hệ thống sẵn sàng")
     payload = success_response(
         readiness,
         code=status.HTTP_503_SERVICE_UNAVAILABLE,

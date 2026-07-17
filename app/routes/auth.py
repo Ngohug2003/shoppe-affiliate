@@ -29,7 +29,7 @@ async def login(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[TokenResponse]:
     token = await _authenticate(form, session)
-    return success_response(token)
+    return success_response(token, message="Đăng nhập thành công")
 
 
 @router.post(
@@ -48,4 +48,7 @@ async def oauth2_login(
 async def me(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> ApiResponse[UserResponse]:
-    return success_response(UserResponse.model_validate(current_user))
+    return success_response(
+        UserResponse.model_validate(current_user),
+        message="Lấy thông tin người dùng thành công",
+    )

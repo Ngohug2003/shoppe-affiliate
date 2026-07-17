@@ -83,7 +83,10 @@ def test_webhook_accepts_update_and_processes_it(
 
     assert response.status_code == 200
     assert response.json() == {
-        "status": {"code": 200, "message": ""},
+        "status": {
+            "code": 200,
+            "message": "Tiếp nhận Telegram webhook thành công",
+        },
         "data": {"ok": True},
     }
     process_update.assert_awaited_once()

@@ -20,7 +20,7 @@ async def test_catalog_client_authenticates_and_imports_product() -> None:
             return httpx.Response(
                 200,
                 json={
-                    "status": {"code": 200, "message": ""},
+                    "status": {"code": 200, "message": "Đăng nhập thành công"},
                     "data": {"access_token": "token", "token_type": "bearer"},
                 },
             )
@@ -29,7 +29,10 @@ async def test_catalog_client_authenticates_and_imports_product() -> None:
         return httpx.Response(
             201,
             json={
-                "status": {"code": 201, "message": ""},
+                "status": {
+                    "code": 201,
+                    "message": "Thêm sản phẩm affiliate thành công",
+                },
                 "data": {
                     "shop_id": "123",
                     "item_id": "456",

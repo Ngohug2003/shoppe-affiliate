@@ -32,4 +32,7 @@ async def receive_telegram_webhook(
     response = telegram_webhook_controller.receive_update(
         update, telegram_secret, background_tasks
     )
-    return success_response(response)
+    return success_response(
+        response,
+        message="Tiếp nhận Telegram webhook thành công",
+    )

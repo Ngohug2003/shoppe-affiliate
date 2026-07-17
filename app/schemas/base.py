@@ -7,7 +7,7 @@ class ApiResponseSchema(BaseModel):
 
 class ResponseStatus(ApiResponseSchema):
     code: int
-    message: str = ""
+    message: str = "Thành công"
 
 
 class ApiResponse[DataT](ApiResponseSchema):
@@ -19,7 +19,7 @@ def success_response[DataT](
     data: DataT,
     *,
     code: int = 200,
-    message: str = "",
+    message: str = "Lấy dữ liệu thành công",
 ) -> ApiResponse[DataT]:
     return ApiResponse(
         status=ResponseStatus(code=code, message=message),

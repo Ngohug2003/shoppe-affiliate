@@ -20,7 +20,7 @@ def test_live_returns_ok(client: TestClient) -> None:
     response = client.get("/api/v1/health/live")
     assert response.status_code == 200
     assert response.json() == {
-        "status": {"code": 200, "message": ""},
+        "status": {"code": 200, "message": "Dịch vụ đang hoạt động"},
         "data": {"status": "ok"},
     }
     assert response.headers["X-Correlation-ID"]
@@ -57,7 +57,7 @@ def test_ready_when_dependencies_are_available(
     response = client.get("/api/v1/health/ready")
     assert response.status_code == 200
     assert response.json() == {
-        "status": {"code": 200, "message": ""},
+        "status": {"code": 200, "message": "Hệ thống sẵn sàng"},
         "data": {
             "status": "ready",
             "dependencies": {"postgres": "ok"},

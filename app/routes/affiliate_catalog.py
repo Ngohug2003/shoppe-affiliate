@@ -53,7 +53,11 @@ async def import_affiliate_product(
     _: Annotated[User, Depends(require_admin)],
 ) -> ApiResponse[AffiliateProductResponse]:
     product = await admin_catalog_controller.import_product(session, payload)
-    return success_response(product, code=status.HTTP_201_CREATED)
+    return success_response(
+        product,
+        code=status.HTTP_201_CREATED,
+        message="Thêm sản phẩm affiliate thành công",
+    )
 
 
 @router.get(
@@ -72,7 +76,10 @@ async def list_all_affiliate_products(
         per_page=query.per_page,
         title=query.title,
     )
-    return success_response(products)
+    return success_response(
+        products,
+        message="Lấy danh sách sản phẩm affiliate thành công",
+    )
 
 
 @router.get(
@@ -85,7 +92,10 @@ async def list_affiliate_shops(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[list[AffiliateShopResponse]]:
     shops = await public_catalog_controller.list_affiliate_shops(session)
-    return success_response(shops)
+    return success_response(
+        shops,
+        message="Lấy danh sách cửa hàng affiliate thành công",
+    )
 
 
 @router.get(
@@ -101,4 +111,7 @@ async def list_affiliate_products_by_shop_id(
     products = await public_catalog_controller.list_affiliate_products_by_shop_id(
         session, shop_id
     )
-    return success_response(products)
+    return success_response(
+        products,
+        message="Lấy danh sách sản phẩm theo cửa hàng thành công",
+    )

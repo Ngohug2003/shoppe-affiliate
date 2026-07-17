@@ -138,7 +138,10 @@ def test_catalog_read_endpoints_group_products_by_shop() -> None:
         )
 
     assert all_products.json() == {
-        "status": {"code": 200, "message": ""},
+        "status": {
+            "code": 200,
+            "message": "Lấy danh sách sản phẩm affiliate thành công",
+        },
         "data": {
             "items": [
                 {
@@ -162,7 +165,10 @@ def test_catalog_read_endpoints_group_products_by_shop() -> None:
         title="Sản phẩm",
     )
     assert shops.json() == {
-        "status": {"code": 200, "message": ""},
+        "status": {
+            "code": 200,
+            "message": "Lấy danh sách cửa hàng affiliate thành công",
+        },
         "data": [{"shop_id": "123", "product_count": 1}],
     }
     assert products.json()["data"][0]["item_id"] == "456"
