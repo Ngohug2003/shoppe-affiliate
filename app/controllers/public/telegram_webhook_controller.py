@@ -8,7 +8,7 @@ from app.schemas.telegram import TelegramUpdate, TelegramWebhookResponse
 from app.services.telegram_webhook_service import TelegramWebhookService
 
 
-class TelegramWebhookController:
+class PublicTelegramWebhookController:
     def __init__(self, service: TelegramWebhookService) -> None:
         self.service = service
 

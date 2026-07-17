@@ -4,10 +4,10 @@ from unittest.mock import AsyncMock
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.routes import affiliate_catalog
 from app.db.session import get_db_session
 from app.main import app
-from app.schemas.affiliate_catalog import (
+from app.routes import affiliate_catalog
+from app.schemas.responses.affiliate_catalog import (
     AffiliateProductResponse,
     AffiliateShopResponse,
 )
@@ -30,12 +30,15 @@ def test_catalog_read_endpoints_group_products_by_shop() -> None:
         yield session
 
     app.dependency_overrides[get_db_session] = override_session
-    original_list_shops = affiliate_catalog.catalog_controller.list_shops
-    original_list_products = affiliate_catalog.catalog_controller.list_products
-    affiliate_catalog.catalog_controller.list_shops = AsyncMock(  # type: ignore[method-assign]
+    controller = affiliate_catalog.public_catalog_controller
+    original_list_affiliate_shops = controller.list_affiliate_shops
+    original_list_affiliate_products = (
+        controller.list_affiliate_products_by_shop_id
+    )
+    controller.list_affiliate_shops = AsyncMock(  # type: ignore[method-assign]
         return_value=[AffiliateShopResponse(shop_id="123", product_count=1)]
     )
-    affiliate_catalog.catalog_controller.list_products = AsyncMock(  # type: ignore[method-assign]
+    controller.list_affiliate_products_by_shop_id = AsyncMock(  # type: ignore[method-assign]
         return_value=[
             AffiliateProductResponse(
                 shop_id="123",
@@ -54,8 +57,10 @@ def test_catalog_read_endpoints_group_products_by_shop() -> None:
             products = client.get("/api/v1/affiliate-shops/123/products")
     finally:
         app.dependency_overrides.clear()
-        affiliate_catalog.catalog_controller.list_shops = original_list_shops  # type: ignore[method-assign]
-        affiliate_catalog.catalog_controller.list_products = original_list_products  # type: ignore[method-assign]
+        controller.list_affiliate_shops = original_list_affiliate_shops  # type: ignore[method-assign]
+        controller.list_affiliate_products_by_shop_id = (  # type: ignore[method-assign]
+            original_list_affiliate_products
+        )
 
     assert shops.json() == [{"shop_id": "123", "product_count": 1}]
     assert products.json()[0]["item_id"] == "456"

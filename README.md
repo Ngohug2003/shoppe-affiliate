@@ -8,22 +8,30 @@ Dự án sử dụng layered architecture đơn giản:
 
 ```text
 app/
-├── api/v1/routes/       # Khai báo endpoint và dependency FastAPI
-├── controllers/         # Điều phối request/response, ánh xạ lỗi HTTP
+├── commands/            # CLI quản trị, seeder và maintenance command
+├── controllers/
+│   ├── admin/           # Điều phối endpoint yêu cầu quyền quản trị
+│   ├── public/          # Điều phối endpoint public/webhook có secret
+│   └── auth_controller.py
+├── middlewares/         # Dependency xác thực và phân quyền FastAPI
+├── routes/              # HTTP endpoint và router aggregator theo version
+├── schemas/
+│   ├── requests/        # Pydantic input của HTTP API
+│   └── responses/       # Pydantic output của HTTP API
 ├── services/            # Nghiệp vụ auth, catalog, metadata, URL, Telegram
 ├── repositories/        # Truy vấn SQLAlchemy và kiểm tra database
 ├── models/              # SQLAlchemy models, mỗi bảng một file
-├── schemas/             # Pydantic request/response models
 ├── providers/           # Adapter affiliate Shopee/mock/official
 ├── core/                # Config, security, logging, exception
 ├── db/                  # Engine, session và declarative base
-└── scripts/             # Entrypoint cho admin và Telegram polling
+├── tasks/               # Background/long-running task entrypoint
+└── utils/               # Helper thuần, không chứa nghiệp vụ
 ```
 
 Hướng phụ thuộc chính:
 
 ```text
-Route → Controller → Service → Repository → Model/Database
+Route → Middleware/Controller → Service → Repository → Model/Database
 ```
 
 Route không chứa câu SQL hoặc nghiệp vụ. Service không tạo HTTP response; controller
@@ -60,9 +68,10 @@ Swagger UI: <http://localhost:8000/docs>
 
 Mỗi bảng có một migration riêng và chạy tuần tự:
 
-1. `001_users.py` tạo bảng `users`.
-2. `002_products.py` tạo bảng `products`.
-3. `003_affiliate_links.py` tạo bảng `affiliate_links`.
+1. `001_users.py` tạo bảng `users` với `BIGINT IDENTITY` tự tăng.
+2. `002_products.py` tạo bảng `products` với `BIGINT IDENTITY` tự tăng.
+3. `003_affiliate_links.py` tạo bảng `affiliate_links`, khóa chính tự tăng và
+   `product_id` kiểu `BIGINT` tham chiếu `products.id`.
 4. `004_products_add_url.py` thêm URL gốc người dùng gửi vào `products.url`.
 
 Revision hiện tại: `004 (head)`.
@@ -75,7 +84,7 @@ docker compose build api
 docker compose up -d postgres
 docker compose run --rm api alembic upgrade head
 docker compose up -d api
-docker compose exec api python -m app.scripts.create_admin
+docker compose exec api python -m app.commands.create_admin
 ```
 
 Container API cũng tự chạy `alembic upgrade head` trước khi khởi động để model và

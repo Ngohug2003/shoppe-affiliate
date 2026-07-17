@@ -123,17 +123,21 @@ class AffiliateCatalogService:
             metadata_source=metadata.source,
         )
 
-    async def list_shops(self, session: AsyncSession) -> list[AffiliateShopSummary]:
+    async def list_affiliate_shops(
+        self, session: AsyncSession
+    ) -> list[AffiliateShopSummary]:
         rows = await self.product_repository.list_affiliate_shop_counts(session)
         return [
             AffiliateShopSummary(shop_id=shop_id, product_count=product_count)
             for shop_id, product_count in rows
         ]
 
-    async def list_products(
+    async def list_affiliate_products_by_shop_id(
         self, session: AsyncSession, shop_id: str
     ) -> list[AffiliateCatalogProduct]:
-        rows = await self.product_repository.list_affiliate_products(session, shop_id)
+        rows = await self.product_repository.list_affiliate_products_by_shop_id(
+            session, shop_id
+        )
         products: list[AffiliateCatalogProduct] = []
         for row in rows:
             product = row.product

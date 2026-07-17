@@ -7,7 +7,7 @@ from app.core.config import Settings
 from app.core.exceptions import ApplicationError
 from app.db.session import async_session_factory
 from app.providers.affiliate import build_affiliate_provider
-from app.schemas.affiliate_catalog import AffiliateProductResponse
+from app.schemas.responses.affiliate_catalog import AffiliateProductResponse
 from app.schemas.telegram import TelegramApiResponse, TelegramUpdate
 from app.services.affiliate_catalog_service import AffiliateCatalogService
 from app.services.telegram_catalog_bot import (

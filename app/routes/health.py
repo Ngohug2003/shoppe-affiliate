@@ -1,14 +1,15 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from app.controllers.health_controller import HealthController
+from app.constants.tags import PUBLIC_HEALTH_TAG
+from app.controllers.public.health_controller import PublicHealthController
 from app.db.session import engine
 from app.repositories.health_repository import HealthRepository
-from app.schemas.health import LiveResponse, ReadyResponse
+from app.schemas.responses.health import LiveResponse, ReadyResponse
 from app.services.health_service import HealthService
 
-router = APIRouter(prefix="/health", tags=["health"])
-health_controller = HealthController(HealthService(HealthRepository(engine)))
+router = APIRouter(prefix="/health", tags=[PUBLIC_HEALTH_TAG])
+health_controller = PublicHealthController(HealthService(HealthRepository(engine)))
 
 
 @router.get("/live", response_model=LiveResponse)

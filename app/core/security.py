@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from uuid import UUID
 
 import jwt
 from jwt.exceptions import InvalidTokenError
@@ -20,7 +19,7 @@ def verify_password(password: str, encoded_hash: str) -> bool:
     return password_hash.verify(password, encoded_hash)
 
 
-def create_access_token(subject: UUID) -> str:
+def create_access_token(subject: int) -> str:
     settings = get_settings()
     now = datetime.now(UTC)
     payload = {
@@ -32,7 +31,7 @@ def create_access_token(subject: UUID) -> str:
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
-def decode_access_token(token: str) -> UUID:
+def decode_access_token(token: str) -> int:
     settings = get_settings()
     try:
         payload = jwt.decode(
@@ -45,6 +44,6 @@ def decode_access_token(token: str) -> UUID:
         subject = payload.get("sub")
         if not isinstance(subject, str):
             raise ValueError("Missing token subject")
-        return UUID(subject)
-    except (InvalidTokenError, ValueError) as exc:
+        return int(subject)
+    except (InvalidTokenError, TypeError, ValueError) as exc:
         raise ValueError("Invalid access token") from exc

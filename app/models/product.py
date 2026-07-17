@@ -1,9 +1,17 @@
 from __future__ import annotations
 
 from datetime import datetime
-from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, Boolean, DateTime, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    DateTime,
+    Identity,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -14,7 +22,9 @@ class Product(Base):
     __tablename__ = "products"
     __table_args__ = (UniqueConstraint("shop_id", "item_id"),)
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    id: Mapped[int] = mapped_column(
+        BigInteger, Identity(), primary_key=True, autoincrement=True
+    )
     shop_id: Mapped[str] = mapped_column(String(64))
     item_id: Mapped[str] = mapped_column(String(64))
     url: Mapped[str] = mapped_column(Text)

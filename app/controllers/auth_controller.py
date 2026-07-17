@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
-from app.schemas.auth import TokenResponse
+from app.schemas.responses.auth import TokenResponse
 from app.services.auth_service import AuthService
 
 

@@ -20,8 +20,8 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.create_table(
         "affiliate_links",
-        sa.Column("id", sa.Uuid(), nullable=False),
-        sa.Column("product_id", sa.Uuid(), nullable=True),
+        sa.Column("id", sa.BigInteger(), sa.Identity(), nullable=False),
+        sa.Column("product_id", sa.BigInteger(), nullable=True),
         sa.Column("provider", sa.String(length=64), nullable=False),
         sa.Column("affiliate_url", sa.Text(), nullable=False),
         sa.Column("provider_campaign_id", sa.String(length=255), nullable=True),

@@ -3,16 +3,13 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ApplicationError
-from app.schemas.affiliate_catalog import (
-    AffiliateProductImportRequest,
-    AffiliateProductResponse,
-    AffiliateShopResponse,
-)
+from app.schemas.requests.affiliate_catalog import AffiliateProductImportRequest
+from app.schemas.responses.affiliate_catalog import AffiliateProductResponse
 from app.services.affiliate_catalog_service import AffiliateCatalogService
 from app.services.product_metadata_service import ProductMetadataError
 
 
-class AffiliateCatalogController:
+class AdminAffiliateCatalogController:
     def __init__(self, service: AffiliateCatalogService) -> None:
         self.service = service
 
@@ -33,13 +30,3 @@ class AffiliateCatalogController:
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
             ) from exc
         return AffiliateProductResponse(**product.__dict__)
-
-    async def list_shops(self, session: AsyncSession) -> list[AffiliateShopResponse]:
-        shops = await self.service.list_shops(session)
-        return [AffiliateShopResponse(**shop.__dict__) for shop in shops]
-
-    async def list_products(
-        self, session: AsyncSession, shop_id: str
-    ) -> list[AffiliateProductResponse]:
-        products = await self.service.list_products(session, shop_id)
-        return [AffiliateProductResponse(**product.__dict__) for product in products]

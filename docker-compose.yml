@@ -33,7 +33,7 @@ services:
   telegram_bot:
     <<: *app
     profiles: ["telegram"]
-    command: ["python", "-m", "app.scripts.telegram_polling"]
+    command: ["python", "-m", "app.tasks.telegram_polling"]
     restart: unless-stopped
     depends_on:
       api:

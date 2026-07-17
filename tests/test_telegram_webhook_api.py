@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi.testclient import TestClient
 
-from app.api.v1.routes import telegram_webhook
 from app.main import app
+from app.routes import telegram_webhook
 
 
 @pytest.fixture

@@ -2,13 +2,16 @@ from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Header
 
-from app.controllers.telegram_webhook_controller import TelegramWebhookController
+from app.constants.tags import PUBLIC_TELEGRAM_TAG
+from app.controllers.public.telegram_webhook_controller import (
+    PublicTelegramWebhookController,
+)
 from app.core.config import get_settings
 from app.schemas.telegram import TelegramUpdate, TelegramWebhookResponse
 from app.services.telegram_webhook_service import TelegramWebhookService
 
-router = APIRouter(tags=["telegram"])
-telegram_webhook_controller = TelegramWebhookController(
+router = APIRouter(tags=[PUBLIC_TELEGRAM_TAG])
+telegram_webhook_controller = PublicTelegramWebhookController(
     TelegramWebhookService(get_settings())
 )
 

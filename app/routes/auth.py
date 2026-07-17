@@ -1,24 +1,18 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.constants.tags import AUTH_TAG
 from app.controllers.auth_controller import AuthController
 from app.db.session import get_db_session
+from app.middlewares.auth import get_current_user
 from app.models.user import User
-from app.schemas.auth import TokenResponse, UserResponse
+from app.schemas.responses.auth import TokenResponse, UserResponse
 
-router = APIRouter(prefix="/auth", tags=["auth"])
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+router = APIRouter(prefix="/auth", tags=[AUTH_TAG])
 auth_controller = AuthController()
-
-
-async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-) -> User:
-    return await auth_controller.current_user(session, token)
 
 
 @router.post("/token", response_model=TokenResponse)

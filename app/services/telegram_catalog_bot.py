@@ -7,7 +7,7 @@ import httpx
 import structlog
 from pydantic import BaseModel, ValidationError
 
-from app.schemas.affiliate_catalog import AffiliateProductResponse
+from app.schemas.responses.affiliate_catalog import AffiliateProductResponse
 from app.schemas.telegram import (
     TelegramApiResponse,
     TelegramUpdate,

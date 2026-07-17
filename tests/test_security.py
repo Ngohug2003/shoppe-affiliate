@@ -1,5 +1,3 @@
-from uuid import uuid4
-
 import pytest
 
 from app.core.security import (
@@ -20,7 +18,7 @@ def test_password_is_hashed_and_verified() -> None:
 
 
 def test_access_token_round_trip() -> None:
-    user_id = uuid4()
+    user_id = 123
     token = create_access_token(user_id)
 
     assert decode_access_token(token) == user_id

@@ -38,7 +38,7 @@ services:
   telegram_bot:
     <<: *app
     profiles: ["telegram"]
-    command: ["python", "-m", "app.scripts.telegram_polling"]
+    command: ["python", "-m", "app.tasks.telegram_polling"]
     depends_on:
       api:
         condition: service_healthy

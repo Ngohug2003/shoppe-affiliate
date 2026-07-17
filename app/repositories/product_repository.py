@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -47,7 +46,7 @@ class ProductRepository:
         ).all()
         return [(shop_id, int(product_count)) for shop_id, product_count in rows]
 
-    async def list_affiliate_products(
+    async def list_affiliate_products_by_shop_id(
         self, session: AsyncSession, shop_id: str
     ) -> list[ProductWithAffiliateUrl]:
         latest_affiliate_url = (
@@ -76,7 +75,7 @@ class AffiliateLinkRepository:
         self,
         session: AsyncSession,
         *,
-        product_id: UUID,
+        product_id: int,
         provider: str,
         affiliate_url: str,
     ) -> AffiliateLink | None:

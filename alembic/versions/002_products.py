@@ -20,7 +20,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.create_table(
         "products",
-        sa.Column("id", sa.Uuid(), nullable=False),
+        sa.Column("id", sa.BigInteger(), sa.Identity(), nullable=False),
         sa.Column("shop_id", sa.String(length=64), nullable=False),
         sa.Column("item_id", sa.String(length=64), nullable=False),
         sa.Column("normalized_url", sa.Text(), nullable=False),

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime
-from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Identity, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -13,8 +12,11 @@ from app.db.base import Base
 class AffiliateLink(Base):
     __tablename__ = "affiliate_links"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    product_id: Mapped[UUID | None] = mapped_column(
+    id: Mapped[int] = mapped_column(
+        BigInteger, Identity(), primary_key=True, autoincrement=True
+    )
+    product_id: Mapped[int | None] = mapped_column(
+        BigInteger,
         ForeignKey("products.id", ondelete="SET NULL"), index=True
     )
     provider: Mapped[str] = mapped_column(String(64))

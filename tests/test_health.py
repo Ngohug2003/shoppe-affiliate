@@ -5,8 +5,9 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from app.api.v1.routes import health
+from app.constants.tags import ADMIN_AFFILIATE_TAG, PUBLIC_AFFILIATE_TAG
 from app.main import app
+from app.routes import health
 
 
 @pytest.fixture
@@ -29,6 +30,12 @@ def test_openapi_exposes_affiliate_catalog(client: TestClient) -> None:
     assert "/api/v1/affiliate-shops" in paths
     assert "/api/v1/affiliate-shops/{shop_id}/products" in paths
     assert "/api/v1/telegram/webhook" in paths
+    assert paths["/api/v1/affiliate-products"]["post"]["tags"] == [
+        ADMIN_AFFILIATE_TAG
+    ]
+    assert paths["/api/v1/affiliate-shops"]["get"]["tags"] == [
+        PUBLIC_AFFILIATE_TAG
+    ]
 
 
 def test_ready_when_dependencies_are_available(

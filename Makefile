@@ -33,7 +33,7 @@ migration:
 	$(COMPOSE) exec api alembic revision --autogenerate -m "$(name)"
 
 create-admin:
-	$(COMPOSE) exec api python -m app.scripts.create_admin
+	$(COMPOSE) exec api python -m app.commands.create_admin
 
 test:
 	$(COMPOSE) run --rm -e APP_ENV=test api pytest -v

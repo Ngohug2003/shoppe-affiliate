@@ -11,10 +11,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from structlog.contextvars import bind_contextvars, clear_contextvars
 
-from app.api.v1.router import api_router
+from app.constants.tags import OPENAPI_TAGS
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.db.session import close_database
+from app.routes import api_router
 from app.services.telegram_webhook_service import (
     TelegramWebhookConfigurationError,
     TelegramWebhookService,
@@ -42,7 +43,12 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app() -> FastAPI:
-    application = FastAPI(title=settings.APP_NAME, version="0.6.0", lifespan=lifespan)
+    application = FastAPI(
+        title=settings.APP_NAME,
+        version="0.6.0",
+        lifespan=lifespan,
+        openapi_tags=OPENAPI_TAGS,
+    )
     application.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.TRUSTED_HOSTS)
     application.add_middleware(
         CORSMiddleware,

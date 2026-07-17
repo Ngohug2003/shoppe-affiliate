@@ -1,5 +1,4 @@
 from unittest.mock import AsyncMock
-from uuid import uuid4
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,7 +26,7 @@ async def test_import_new_product_initializes_extra_data() -> None:
     affiliate_link_repository.get_matching.return_value = None
 
     def assign_product_id(_: AsyncSession, product: Product) -> None:
-        product.id = uuid4()
+        product.id = 1
 
     product_repository.add.side_effect = assign_product_id
 
